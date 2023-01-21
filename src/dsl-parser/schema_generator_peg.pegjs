@@ -89,16 +89,16 @@ Column = _ colName:ColumnName _ colType:ColumnType _ colDefs:ColumnDefinitionsIn
 Relation = _ colName:ColumnName _ tableName:TableName _ relType:RelationType _ relDefs:RelationDefinitions {return `{"operation": "Create", "resource": "${relType}","migration":${generateRelationMigration(colName, tableName, relType, relDefs)}}` }
 Columns = (Column/Relation)*
 ColumnName = VariableName
-ColumnType = BigIntegerType / BooleanType / DateType / DateTimeType / FileType / FloatType / IntegerType / StringType 
+ColumnType = BigIntegerType / BooleanType / DateTimeType / DateType / FileType / FloatType / IntegerType / StringType 
 ColumnDefinition = (Unique / Default / PK / Nullable)
 ColumnDefinitions = ColumnDefinition* 
 ColumnDefinitionsInput = "[" colDefs:ColumnDefinitions "]" {return colDefs} / ""
 RelationDefinition = RelationConstraintOnUpdate / RelationConstraintOnDelete
 RelationDefinitions = RelationDefinition*
-RelationType = rel:("OneToMany" / "ManyToOne" / "ManyToMany" / "OneToOne") {return `${rel}Relation`}
+RelationType = rel:("OneToMany" / "ManyToOne" / "ManyToMany" / "OneToOne") {return `${rel == "ManyToOne"? "OneToMany": rel}Relation`}
 RelationConstraintOnUpdate = _("OnUpdate" / "onUpdate" / "onupdate" / "ONUPDATE") _ ":" _ val:RelationConstraintType _ {return {"onUpdate": val}}
 RelationConstraintOnDelete = _"OnDelete" _ ":" _ val:RelationConstraintType _ {return {"onDelete": val}}
-RelationConstraintType = "CASCADE" / "RESTRICT" / "SETNULL"
+RelationConstraintType = "CASCADE" / "RESTRICT" / "SET NULL"
 
 /*Role & Permissions*/
 RolePermission = _ "role" _ role:Role _ "{"_ permissions:Permissions _"}" _ {return generateRolePermission(role,permissions)}

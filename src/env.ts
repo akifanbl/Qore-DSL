@@ -12,5 +12,5 @@
 // };
 
 export default {
-  OPENAI_API_KEY: "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",
+  OPENAI_API_KEY: "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",
 };

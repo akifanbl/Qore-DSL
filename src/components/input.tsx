@@ -2,6 +2,7 @@ import { Button, HStack, Input, Text, VStack } from '@chakra-ui/react'
 import React from 'react'
 import { OpenAIClient , ddlModelSample} from '../dsl-generator/openai'
 import { SchemaGenerator } from "../dsl-parser/schema_generator";
+import { QoreBaseClient } from '../qore-base-integration/qoreBaseClient';
 
 function TextInput() {
     const [value, setValue] = React.useState('')
@@ -9,7 +10,7 @@ function TextInput() {
     const [isLoading, setIsLoading] = React.useState(false)
     const openAIClient = new OpenAIClient()
 
-    const handleSubmit = React.useCallback( async (e) => {
+    const handleSubmit = React.useCallback( async (e: { preventDefault: () => void; }) => {
         e.preventDefault();
         setIsLoading(true);
         const generated_model = await openAIClient.createCompletion(ddlModelSample, value);
@@ -19,6 +20,8 @@ function TextInput() {
             model : generated_model,
             payload : JSON.stringify(parsed_model, null, 2)
         })
+        const qoreBaseClient = new QoreBaseClient();
+        qoreBaseClient.postMigrate(parsed_model);
     },[value, isLoading, result])
 
     return (
