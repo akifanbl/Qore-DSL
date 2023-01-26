@@ -8,12 +8,12 @@
          op.migration.table = tableName
       } else if (op.resource.includes("Relation")){
         if (op.resource.startsWith("OneToMany")){
-      	  op.migration.one = {"table":tableName}
-        } else if (op.resource.startsWith("ManyToOne")){
-      	  op.migration.many = {"table":tableName}
+      	  op.migration.one = op.migration.one || {"table":tableName}
+      	  op.migration.many = op.migration.many || {"table":tableName}
         } else if (op.resource.startsWith("ManyToMany")){
        	  op.migration.origin = {"table":tableName}
         }
+        op.migration.nullable = op.migration.nullable || true;
       }
     })
     return result;
@@ -86,26 +86,26 @@ Model
 Table = tableName:TableName {return `{"operation": "Create", "resource": "Table", "migration": {"name": "${tableName}"}}`}
 TableName = VariableName
 Column = _ colName:ColumnName _ colType:ColumnType _ colDefs:ColumnDefinitionsInput {return `{"operation": "Create", "resource": "Column","migration":{"name":"${colName}","table":"","column": {"type":"${colType.type}", "definition": ${mergeColumnDefinition(colDefs,colType.definition)}}}}`}
-Relation = _ colName:ColumnName _ tableName:TableName _ relType:RelationType _ relDefs:RelationDefinitions {return `{"operation": "Create", "resource": "${relType}","migration":${generateRelationMigration(colName, tableName, relType, relDefs)}}` }
+Relation = _ colName:ColumnName _ tableName:TableName _ relType:RelationType _ relDefs:RelationDefinitions {return `{"operation": "Create", "resource": "${relType == "ManyToOneRelation"?"OneToManyRelation": relType}","migration":${generateRelationMigration(colName, tableName, relType, relDefs)}}` }
 Columns = (Column/Relation)*
 ColumnName = VariableName
 ColumnType = BigIntegerType / BooleanType / DateTimeType / DateType / FileType / FloatType / IntegerType / StringType 
 ColumnDefinition = (Unique / Default / PK / Nullable)
 ColumnDefinitions = ColumnDefinition* 
 ColumnDefinitionsInput = "[" colDefs:ColumnDefinitions "]" {return colDefs} / ""
-RelationDefinition = RelationConstraintOnUpdate / RelationConstraintOnDelete
+RelationDefinition = RelationConstraintOnUpdate / RelationConstraintOnDelete / Nullable
 RelationDefinitions = RelationDefinition*
-RelationType = rel:("OneToMany" / "ManyToOne" / "ManyToMany" / "OneToOne") {return `${rel == "ManyToOne"? "OneToMany": rel}Relation`}
+RelationType = rel:("OneToMany" / "ManyToOne" / "ManyToMany" / "OneToOne") {return `${rel}Relation`}
 RelationConstraintOnUpdate = _("OnUpdate" / "onUpdate" / "onupdate" / "ONUPDATE") _ ":" _ val:RelationConstraintType _ {return {"onUpdate": val}}
 RelationConstraintOnDelete = _"OnDelete" _ ":" _ val:RelationConstraintType _ {return {"onDelete": val}}
 RelationConstraintType = "CASCADE" / "RESTRICT" / "SET NULL"
 
 /*Role & Permissions*/
 RolePermission = _ "role" _ role:Role _ "{"_ permissions:Permissions _"}" _ {return generateRolePermission(role,permissions)}
-Role = roleName:RoleName {return `{"operation":"Create", "resource":"Role", "migration": {"name":"${roleName}", "deletionProtection":true}}`}
+Role = roleName:RoleName {return `{"operation":"Create", "resource":"Role", "migration": {"name":"${roleName}", "deletionProtection":false}}`}
 RoleName = VariableName
 Permissions = (Permission)*
-Permission = _ type:PermissionType _ "[" tables:( _ TableName _ )+ "]" {return `{"operation":"Create", "resource":"Permission", "migration": {"role":"", "tables":${tables}, "actions": ["${type}"]}}`}
+Permission = _ type:PermissionType _ "[" tables: (_ tableName: (TableName) _ {return `"${tableName}"`})* "]" {return `{"operation":"Create", "resource":"Permission", "migration": {"role":"", "tables":[${tables}], "actions": ["${type}"]}}`}
 PermissionType = "insert"/"select"/"update"/"delete"/"insight"
 
 
@@ -125,6 +125,7 @@ Unique = _"unique" _ ":" _ val:Boolean _ {return {"unique": val}}
 Nullable = _"nullable" _ ":" _ val:Boolean _ {return {"nullable": val}}
 Default = _"default" _ ":" _ val:AllType _ {return {"default": val}}
 FK = _ "fk" _ "(" _ ")" _
+
 /* Variable name syntax */
 VariableName "valid variable name syntax"
   = [a-zA-Z_0-9]+ {return text()}

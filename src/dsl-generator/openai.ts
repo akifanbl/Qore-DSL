@@ -12,9 +12,8 @@ export class OpenAIClient {
     this.openaiAPI = new OpenAIApi(this.config);
   }
 
-  async createCompletion (sample:string, question:string):Promise<string>{
-    const prompt = `${sample}\nQ : ${question}\nA : `
-    console.log({oa: this.openaiAPI})
+  async createCompletion (promptSample:string, question:string):Promise<string>{
+    const prompt = `${promptSample}\nQ : ${question}\nA : `
     const response = await this.openaiAPI.createCompletion({
         model: "text-davinci-002",
         prompt,
@@ -28,4 +27,46 @@ export class OpenAIClient {
   }
 }
 
-export const ddlModelSample = "I am a very smart model database generating bot. If you ask me to build a model for the app you describe, I'll give an answer based on that description. If the description of your application is still not clear, I will respond with \"please provide a more detailed description of your application!\"\n\nQ : create a model for a book selling application where the user is the author of the book\nA :\nmodel user {\n  external_id str [pk]\n  password str [nullable : false]\n  age int [default: 20 nullable : true]\n  profile_pict file [default: {filename: \"avatar\" size: 124.3 mime: \".jpg\"}]\n}\n\nmodel books {\n  id int [pk]\n  title str\n  author user ManyToOne OnDelete:RESTRICT\n}\n\nQ : create a model for a restaurant management app\nA :\nmodel customer {\n  external_id str [pk]\n  name str [nullable : false]\n}\n\nmodel foods{\n  name str [unique:true]\n  stock int [default:0]\n}\n\nmodel order {\n  id int [pk]\n  customer customer ManyToOne OnDelete:SETNULL\n  food customer ManyToOne OnDelete:SETNULL\n  quantity int [nullable:false]\n}\n"
+export const ddlModelSample = "\
+I am a very smart model database generating bot. If you ask me to build a model for the app you describe, I'll give an answer based on that description. If the description of your application is still not clear, I will respond with \"please provide a more detailed description of your application!\"\
+Q : create a model for a book selling application where the user is the author of the book and the customer\
+A :\
+model books {\
+  title str\
+  author user ManyToOne OnDelete:RESTRICT\
+}\
+role author{\
+}\
+role customer{\
+}\
+Q : create a model for a restaurant management app where that save all menu, transactions, and employee data. There is 2 kind of user, employee and manager\
+A :\
+model menu{\
+  name str [unique:true]\
+  stock int [default:0]\
+  price int [nullable:false]\
+}\
+model transaction {\
+  timestamp datetime\
+  food menu ManyToOne OnDelete:SET NULL\
+  quantity int [nullable:false default:0]\
+}\
+model employee{\
+  user user OneToOne OnDelete:CASCADE OnUpdate:CASCADE nullable:true\
+  full_name str\
+  age int\
+  gender str\
+  salary int\
+}\
+role employee{\
+  select [employee menu]\
+  insert [menu]\
+  update [menu]\
+  delete [menu]\
+}\
+role manager {\
+  select [employee menu transaction]\
+  insert [employee menu transaction]\
+  delete [employee menu transaction]\
+  update [employee menu transaction]\
+}"

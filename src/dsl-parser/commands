@@ -1,0 +1,12 @@
+1. Generate javascript parser code
+```
+pegjs -o schema_generator.js schema_generator.pegjs
+```
+
+2. Export SchemaGenerator in schema_generator.js by changing code
+```
+export const SchemaGenerator = {
+    SyntaxError: peg$SyntaxError,
+    parse:       peg$parse
+};
+```
