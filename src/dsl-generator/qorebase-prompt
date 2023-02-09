@@ -1,33 +1,28 @@
-I am a very smart model database generating bot. If you ask me to build a model for the app you describe, I'll give an answer based on that description. If the description of your application is still not clear, I will respond with "please provide a more detailed description of your application!"
-
-Q : create a model for a book selling application where the user is the author of the book
-A :
-model user {
-  external_id str [pk]
-  password str [nullable : false]
-  age int [default: 20 nullable : true]
-  profile_pict file [default: {filename: "avatar" size: 124.3 mime: ".jpg"}]
-}
-
-model books {
-  title str
-  author user ManyToOne OnDelete:RESTRICT
-}
-
-Q : create a model for a restaurant management app
-A :
-model customer {
-  external_id str [pk]
-  name str [nullable : false]
-}
-
-model foods{
+model menu{
   name str [unique:true]
   stock int [default:0]
+  price int [nullable:false]
+}
+model transaction {
+  timestamp datetime
+  food menu ManyToOne OnDelete:SET NULL
+  quantity int [nullable:false default:0]
+}
+model employee{
+  user user OneToMany OnDelete:CASCADE OnUpdate:CASCADE nullable:true
+  full_name str
+  age int
+  gender str
+  salary int
+}
+role employee{
+  select [employee menu]
+  insert update delete [menu]
+}
+role manager {
+  select insert update delete [employee menu transaction]
 }
 
-model order {
-  customer customer ManyToOne OnDelete:SET NULL
-  food customer ManyToOne OnDelete:SET NULL
-  quantity int [nullable:false]
-}
+
+Query example
+create a library management application that displays a list of books, student profiles, and records all books borrowed by students. Librarians can take any action on the data while students can only view book data

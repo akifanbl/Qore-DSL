@@ -23,6 +23,7 @@ export class OpenAIClient {
         frequency_penalty: 0,
         presence_penalty: 0,
       });  
+    console.log({response})
     return response.data.choices[0].text || '';
   }
 }
@@ -33,7 +34,7 @@ Q : create a model for a book selling application where the user is the author o
 A :\
 model books {\
   title str\
-  author user ManyToOne OnDelete:RESTRICT\
+  author users ManyToOne OnDelete:RESTRICT\
 }\
 role author{\
 }\
@@ -52,7 +53,7 @@ model transaction {\
   quantity int [nullable:false default:0]\
 }\
 model employee{\
-  user user OneToOne OnDelete:CASCADE OnUpdate:CASCADE nullable:true\
+  user users OneToMany OnDelete:CASCADE OnUpdate:CASCADE nullable:true\
   full_name str\
   age int\
   gender str\
@@ -60,13 +61,8 @@ model employee{\
 }\
 role employee{\
   select [employee menu]\
-  insert [menu]\
-  update [menu]\
-  delete [menu]\
+  insert update delete [menu]\
 }\
 role manager {\
-  select [employee menu transaction]\
-  insert [employee menu transaction]\
-  delete [employee menu transaction]\
-  update [employee menu transaction]\
+  select insert update delete [employee menu transaction]\
 }"

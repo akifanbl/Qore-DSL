@@ -19,6 +19,23 @@
     return result;
   }
   
+  function generateView(view, table, viewAttributes) {
+    let separator = columns.length > 0? ',' : ''
+    let result = JSON.parse(`[${view}]`)
+    
+    result[0].migration = {
+    	name: result[0].migration.name,
+        table,
+    }
+    
+    viewAttributes.forEach(el => {
+    	for(var k in el) result[0].migration[k]=el[k];
+    })
+
+  
+    return result;
+  }
+  
   function generateRolePermission(role, permissions) {
     let separator = permissions.length > 0? ',' : ''
     let result = JSON.parse(`[${role} ${separator} ${permissions}]`)
@@ -77,7 +94,7 @@
 start
 	= Entities
 
-Entities = entities:(Model/RolePermission)* {return mergeOperations(entities)}
+Entities = entities:(Model/View/RolePermission)* {return mergeOperations(entities)}
 /* Model */
 Model
 	= _ "model" _ table:Table _ "{"_ columns:Columns _"}" _
@@ -89,8 +106,8 @@ Column = _ colName:ColumnName _ colType:ColumnType _ colDefs:ColumnDefinitionsIn
 Relation = _ colName:ColumnName _ tableName:TableName _ relType:RelationType _ relDefs:RelationDefinitions {return `{"operation": "Create", "resource": "${relType == "ManyToOneRelation"?"OneToManyRelation": relType}","migration":${generateRelationMigration(colName, tableName, relType, relDefs)}}` }
 Columns = (Column/Relation)*
 ColumnName = VariableName
-ColumnType = BigIntegerType / BooleanType / DateTimeType / DateType / FileType / FloatType / IntegerType / StringType 
-ColumnDefinition = (Unique / Default / PK / Nullable)
+ColumnType = BigIntegerType / BooleanType / DateTimeType / DateType / FileType / FloatType / IntegerType / JSONType / LinestringType / MultipleFileType / PasswordType / PointType / PolygonType / RawType / RichTextType / SelectType / StringType / TimestampType
+ColumnDefinition = (Enums / Unique / Default / PK / Nullable)
 ColumnDefinitions = ColumnDefinition* 
 ColumnDefinitionsInput = "[" colDefs:ColumnDefinitions "]" {return colDefs} / ""
 RelationDefinition = RelationConstraintOnUpdate / RelationConstraintOnDelete / Nullable
@@ -99,27 +116,47 @@ RelationType = rel:("OneToMany" / "ManyToOne" / "ManyToMany" / "OneToOne") {retu
 RelationConstraintOnUpdate = _("OnUpdate" / "onUpdate" / "onupdate" / "ONUPDATE") _ ":" _ val:RelationConstraintType _ {return {"onUpdate": val}}
 RelationConstraintOnDelete = _"OnDelete" _ ":" _ val:RelationConstraintType _ {return {"onDelete": val}}
 RelationConstraintType = "CASCADE" / "RESTRICT" / "SET NULL"
+ 
+/*View*/
+View
+	= _ "view" _ viewName:ViewName _ ":" _ tableName:TableName _  "{"_ viewAttributes:ViewAttributes _"}" _
+    {return generateView(viewName,tableName,viewAttributes)} 
+ViewName = viewName:VariableName {return `{"operation": "Create", "resource": "View", "migration": {"name": "${viewName}"}}`}
+ViewAttributes = (Fields/Condition)*
+Fields = _ "fields" _ "[" fields:(_ fieldName:(ColumnName) _ {return `${fieldName}`})* "]" {return {"fields": fields} }
+Condition = _ "condition" _ formulaWithPrefix:(formula:String {return `Formula: ${formula}`}) _ {return {"condition": {"$and": [{[formulaWithPrefix] : {"$eq": true}}]}}}
 
 /*Role & Permissions*/
 RolePermission = _ "role" _ role:Role _ "{"_ permissions:Permissions _"}" _ {return generateRolePermission(role,permissions)}
 Role = roleName:RoleName {return `{"operation":"Create", "resource":"Role", "migration": {"name":"${roleName}", "deletionProtection":false}}`}
 RoleName = VariableName
 Permissions = (Permission)*
-Permission = _ type:PermissionType _ "[" tables: (_ tableName: (TableName) _ {return `"${tableName}"`})* "]" {return `{"operation":"Create", "resource":"Permission", "migration": {"role":"", "tables":[${tables}], "actions": ["${type}"]}}`}
+Permission = types:(_ typeName: (PermissionType) _ {return `"${typeName}"`})* "[" tables: (_ tableName: (TableName) _ {return `"${tableName}"`})* "]" {return `{"operation":"Create", "resource":"Permission", "migration": {"role":"", "tables":[${tables}], "actions": [${types}]}}`}
 PermissionType = "insert"/"select"/"update"/"delete"/"insight"
 
 
 /*DSL Column Type*/
 BigIntegerType = "bigint" {return {"type":"bigint", "definition": { "default": 0, "nullable": true }}}
 BooleanType = "bool" {return {"type":"boolean", "definition": { "default": null, "nullable": true }}}
-DateType = "date" {return {"type":"date", "definition" : { "default": "now()", "exact": false, "nullable": true }}}
 DateTimeType = "datetime" {return {"type":"datetime", "definition" : { "default": "now()", "exact": false, "nullable": true, "triggers": [] }}}
+DateType = "date" {return {"type":"date", "definition" : { "default": "now()", "exact": false, "nullable": true }}}
 FileType = "file" {return {"type":"file","definition" : {"extensions": ".jpg, .png, .svg","default": { "filename": "", "size": 0, "mime": "application/octet-stream" }}}}
 FloatType = "float" {return {"type":"float","definition": {"precision": 8, "scale": 2, "default": 0, "nullable": true}}}
 IntegerType = "int" {return {"type":"integer", "definition": {"default":0, "nullable":true}}}
+JSONType = "json" {return {"type":"json", "definition": {"default":null, "nullable":true}}}
+LinestringType = "linestring" {return {"type":"linestring", "definition": {"default":null, "nullable":true}}}
+MultipleFileType = "multiFile" {return {"type":"multiple_files", "definition": {"default":null, "nullable":true}}}
+PasswordType = "password" {return {"type":"password", "definition": {"textType": "text", "nullable":true, "algorithm": "sha256", "salt":"admin-secret"}}}
+PointType = "point" {return {"type":"point", "definition": {"default": null, "nullable":true}}}
+PolygonType = "polygon" {return {"type":"polygon", "definition": {"default": null, "nullable":true}}}
+RawType = "raw" {return {"type":"polygon", "definition": {"default": null, "nullable":true, "raw": "(price * 2)"}}}
+RichTextType = "richtext" {return {"type":"richtext", "definition": {"default": null, "nullable":true}}}
+SelectType = "select" {return {"type":"select", "definition": {"default": null, "enums":[], "nullable": true}}}
 StringType = "str" {return {"type":"text", "definition": {"textType": "text"}}}
+TimestampType = "timestamp" {return {"type":"timestamp", "definition": {"default": "now()", "nullable": true}}}
 
 /*Column Definition*/
+Enums = _ "enums" _ ":" _  "[" values: (_ val: (AllType) _ {return val})* "]" {return {"enums": values }}
 PK = _ "pk" _ {return {"primary_key":true, "nullable":false}}
 Unique = _"unique" _ ":" _ val:Boolean _ {return {"unique": val}}
 Nullable = _"nullable" _ ":" _ val:Boolean _ {return {"nullable": val}}
