@@ -22,7 +22,14 @@ role employee{
 role manager {
   select insert update delete [employee menu transaction]
 }
-
+view pricey_menu:menu {
+  condition "price > 100000"
+  populate []
+  limit 5
+  offset 10
+  groupBy [id]
+  join left
+}
 
 Query example
 create a library management application that displays a list of books, student profiles, and records all books borrowed by students. Librarians can take any action on the data while students can only view book data

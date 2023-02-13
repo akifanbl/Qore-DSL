@@ -119,12 +119,19 @@ RelationConstraintType = "CASCADE" / "RESTRICT" / "SET NULL"
  
 /*View*/
 View
-	= _ "view" _ viewName:ViewName _ ":" _ tableName:TableName _  "{"_ viewAttributes:ViewAttributes _"}" _
+	= _ "view" _ viewName:ViewName _ ":" _ tableName:TableName _  "{"_ viewAttributes:SelectProperties _"}" _
     {return generateView(viewName,tableName,viewAttributes)} 
 ViewName = viewName:VariableName {return `{"operation": "Create", "resource": "View", "migration": {"name": "${viewName}"}}`}
-ViewAttributes = (Fields/Condition)*
+
+/*Select Properties*/
+SelectProperties = (Fields/Condition/Populate/Limit/Offset/GroupBy/Join)*
 Fields = _ "fields" _ "[" fields:(_ fieldName:(ColumnName) _ {return `${fieldName}`})* "]" {return {"fields": fields} }
 Condition = _ "condition" _ formulaWithPrefix:(formula:String {return `Formula: ${formula}`}) _ {return {"condition": {"$and": [{[formulaWithPrefix] : {"$eq": true}}]}}}
+Limit = _ "limit" _ limit:Integer _ {return {"limit": limit}}
+Offset = _ "offset" _ offset:Integer _ {return {"offset": offset}}
+Populate = _ "populate" _ "[" populate:(_ fieldName:(ColumnName) _ {return `${fieldName}`})* "]" {return {"populate": populate} }
+GroupBy = _ "groupBy" _ "[" groupBy:(_ fieldName:(ColumnName) _ {return `${fieldName}`})* "]" {return {"groupBy": groupBy} }
+Join = _ "join" _ join:("left"/"inner") _ {return {"join": join}}
 
 /*Role & Permissions*/
 RolePermission = _ "role" _ role:Role _ "{"_ permissions:Permissions _"}" _ {return generateRolePermission(role,permissions)}
@@ -133,7 +140,6 @@ RoleName = VariableName
 Permissions = (Permission)*
 Permission = types:(_ typeName: (PermissionType) _ {return `"${typeName}"`})* "[" tables: (_ tableName: (TableName) _ {return `"${tableName}"`})* "]" {return `{"operation":"Create", "resource":"Permission", "migration": {"role":"", "tables":[${tables}], "actions": [${types}]}}`}
 PermissionType = "insert"/"select"/"update"/"delete"/"insight"
-
 
 /*DSL Column Type*/
 BigIntegerType = "bigint" {return {"type":"bigint", "definition": { "default": 0, "nullable": true }}}
