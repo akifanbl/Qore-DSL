@@ -7,7 +7,7 @@
 [] One-to-One relation using lookup fields?
 
 []  View
-    [] Add `conditions` attribute!
+    [x] Add `conditions` attribute!
     [] other attributes : order, limit, offset, etc
 
 Create View DDL Example
@@ -40,6 +40,7 @@ Create View DDL Example
 
 [] Create role&permissions ddl
     [x] Make 1 row of dsl can use some operation for 1 table combinations
+    [x] Create filtered table row permissions 
 
 [] Complete qore-data supported column type in DSL (sisa yg aneh2 ex:action,rollup,)
 

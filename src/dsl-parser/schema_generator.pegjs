@@ -89,6 +89,15 @@
    })
    return JSON.stringify(migration)
   }
+  
+  function generataPermissions(types, tables){
+    let operations = ''
+    tables.forEach(el => {
+      operations += `{"operation":"Create", "resource":"Permission", "migration": {"role":"", "tables": [${el.tableName}], ${el.condition !== "null"? `"condition": ${el.condition},` : ''} "actions": [${types}]}},`
+    })
+    
+    return operations.slice(0,-1);
+  }
 }
 
 start
@@ -138,7 +147,8 @@ RolePermission = _ "role" _ role:Role _ "{"_ permissions:Permissions _"}" _ {ret
 Role = roleName:RoleName {return `{"operation":"Create", "resource":"Role", "migration": {"name":"${roleName}", "deletionProtection":false}}`}
 RoleName = VariableName
 Permissions = (Permission)*
-Permission = types:(_ typeName: (PermissionType) _ {return `"${typeName}"`})* "[" tables: (_ tableName: (TableName) _ {return `"${tableName}"`})* "]" {return `{"operation":"Create", "resource":"Permission", "migration": {"role":"", "tables":[${tables}], "actions": [${types}]}}`}
+Permission = types:(_ typeName: (PermissionType) _ {return `"${typeName}"`})* "[" tables: (_ tableName: (TableName) condition:( "[" formula:Formula "]" {return formula})? _  {return {tableName:`"${tableName}"`, condition: JSON.stringify(condition)}})* "]" {return generataPermissions(types, tables)}
+Formula = formulaWithPrefix:(formula:String {return `Formula: ${formula}`}) {return {"$and": [{[formulaWithPrefix] : {"$eq": true}}]}}
 PermissionType = "insert"/"select"/"update"/"delete"/"insight"
 
 /*DSL Column Type*/
