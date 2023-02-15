@@ -16,8 +16,8 @@ model employee{
   salary int
 }
 role employee{
-  select [employee menu]
-  insert update delete [menu]
+  select [employee["user.id == external_id"]]
+  select insert update delete [menu]
 }
 role manager {
   select insert update delete [employee menu transaction]
@@ -29,6 +29,13 @@ view pricey_menu:menu {
   offset 10
   groupBy [id]
   join left
+}
+index nama_index{
+  table tabel
+  columns [kol1 kol2]
+  type brin
+  condition "true"
+  unique:true
 }
 
 Query example

@@ -90,7 +90,7 @@
    return JSON.stringify(migration)
   }
   
-  function generataPermissions(types, tables){
+  function generatePermissions(types, tables){
     let operations = ''
     tables.forEach(el => {
       operations += `{"operation":"Create", "resource":"Permission", "migration": {"role":"", "tables": [${el.tableName}], ${el.condition !== "null"? `"condition": ${el.condition},` : ''} "actions": [${types}]}},`
@@ -98,12 +98,29 @@
     
     return operations.slice(0,-1);
   }
+
+  function generateIndex(index,indexRequiredAttributes,indexOptionalAttributes) {
+  	let separator = columns.length > 0? ',' : ''
+    let result = JSON.parse(`[${index}]`)
+    
+  
+    indexRequiredAttributes.forEach(el => {
+    	for(var k in el) result[0].migration[k]=el[k];
+    })
+    
+    indexOptionalAttributes.forEach(el => {
+    	for(var k in el) result[0].migration[k]=el[k];
+    })
+
+  
+    return result;
+  }
 }
 
 start
 	= Entities
 
-Entities = entities:(Model/View/RolePermission)* {return mergeOperations(entities)}
+Entities = entities:(Model/View/RolePermission/Index)* {return mergeOperations(entities)}
 /* Model */
 Model
 	= _ "model" _ table:Table _ "{"_ columns:Columns _"}" _
@@ -132,6 +149,16 @@ View
     {return generateView(viewName,tableName,viewAttributes)} 
 ViewName = viewName:VariableName {return `{"operation": "Create", "resource": "View", "migration": {"name": "${viewName}"}}`}
 
+/*Index*/
+Index = _ "index" _ indexName:IndexName _ "{" _ indexRequiredAttributes:IndexRequiredAttributes _ indexOptionalAttributes:IndexOptionalAttributes _ "}" {return generateIndex(indexName,indexRequiredAttributes,indexOptionalAttributes)}
+IndexName = indexName:VariableName {return `{"operation": "Create", "resource": "Index", "migration": {"name": "${indexName}"}}`}
+IndexRequiredAttributes = (IndexTable IndexColumns) / (IndexColumns IndexTable)
+IndexOptionalAttributes = (Unique/Condition/IndexType)*
+IndexTable = _ "table" _ tableName:TableName { return {"table": tableName}}
+IndexColumns = _ "columns" _ "[" columns:(_ column:(ColumnName) _ {return `${column}`})* "]" {return {columns: columns} }
+IndexType = _ "type" _ type:IndexTypeEnum { return {"type": type}}
+IndexTypeEnum = "btree" / "hash" / "gist" / "gin" / "spgist" / "brin"
+
 /*Select Properties*/
 SelectProperties = (Fields/Condition/Populate/Limit/Offset/GroupBy/Join)*
 Fields = _ "fields" _ "[" fields:(_ fieldName:(ColumnName) _ {return `${fieldName}`})* "]" {return {"fields": fields} }
@@ -147,7 +174,7 @@ RolePermission = _ "role" _ role:Role _ "{"_ permissions:Permissions _"}" _ {ret
 Role = roleName:RoleName {return `{"operation":"Create", "resource":"Role", "migration": {"name":"${roleName}", "deletionProtection":false}}`}
 RoleName = VariableName
 Permissions = (Permission)*
-Permission = types:(_ typeName: (PermissionType) _ {return `"${typeName}"`})* "[" tables: (_ tableName: (TableName) condition:( "[" formula:Formula "]" {return formula})? _  {return {tableName:`"${tableName}"`, condition: JSON.stringify(condition)}})* "]" {return generataPermissions(types, tables)}
+Permission = types:(_ typeName: (PermissionType) _ {return `"${typeName}"`})* "[" tables: (_ tableName: (TableName) condition:( "[" formula:Formula "]" {return formula})? _  {return {tableName:`"${tableName}"`, condition: JSON.stringify(condition)}})* "]" {return generatePermissions(types, tables)}
 Formula = formulaWithPrefix:(formula:String {return `Formula: ${formula}`}) {return {"$and": [{[formulaWithPrefix] : {"$eq": true}}]}}
 PermissionType = "insert"/"select"/"update"/"delete"/"insight"
 
