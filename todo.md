@@ -13,6 +13,22 @@ PRIO
 
 [] One-to-One relation using lookup fields?
 
+[] Complete select properties
+
+```
+export type SelectInstruction = {
+  condition?: FilterQuery<{}>;
+  populate?: string[];
+  join?: "left" | "inner";
+  limit?: number;
+  offset?: number;
+  groupBy?: string[];
+  orderBy?: OrderBy;
+  fields?: string[];
+  params?: Record<string, string>;
+} & DMLInstruction;
+```
+
 [x] View
 [x] Add `conditions` attribute!
 [x] other attributes : order, limit, offset, etc
