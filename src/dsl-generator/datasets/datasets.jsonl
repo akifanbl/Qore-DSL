@@ -1,0 +1,203 @@
+{
+    "prompt":"create a table for a restaurant management app that can save all menu, transactions, and employee data. There is 2 kind of user, employee and manager.",
+    "completion":"
+        table menu {
+            name string [unique:true]
+            stock int [default:0]
+            price int [nullable:false]
+        }
+        table transaction {
+            timestamp datetime
+            food menu ManyToOne OnDelete:SET NULL
+            quantity int [nullable:false default:0]
+        }
+        table employee {
+            user users OneToMany OnDelete:CASCADE OnUpdate:CASCADE nullable:true
+            full_name string
+            age int
+            gender string
+            salary int
+        }
+        role employee {
+            select [users[\"external_id == user.id\"]]
+            select insert update delete [menu]
+        }
+        role manager {
+            select insert update delete [employee menu transaction]
+        }
+    "
+}
+{
+    "prompt":"I want to create a flight booking application.",
+    "completion":"
+        table airlines {
+            name string
+            description string
+            rating int [enums:[1 2 3 4 5]]
+        }
+        table flights {
+            airline airlines ManyToOne
+            from string
+            to string
+            departure_time datetime
+            arrival_time datetime
+        }
+        table seats {
+            flight flights ManyToOne
+            seats_code string
+            price int
+            status string [enums:[\"booked\" \"available\"]]
+            seat_class string [enums:[\"economy\" \"premium_economy\" \"business\" \"first_class\"]]
+        }
+        table users {
+            name string
+            age int
+            address string
+        }
+    "
+}
+{
+    "prompt":"Create a model for a bus management application.",
+    "completion":"
+    
+    "
+}
+{
+    "prompt":"Create a model for an online marketplace that connects people who want to rent out their homes with people who are looking for accommodations in specific locales",
+    "completion":"
+        table users{
+            full_name string
+            birth_date date
+            gender string
+            address string
+            city string
+            state string
+            zip_code string
+        }
+        table home_owners{
+            bio string
+        }
+        table home_owner_rating {
+            score int [enums:[1 2 3 4 5]]
+            description string
+            home_owner home_owners ManyToOne
+        }
+        table rooms_rating {
+            score int [enums:[1 2 3 4 5]]
+            description string
+            room rooms ManyToOne
+        }
+        table homes{
+            owner users ManyToOne
+            address string
+            city string
+            state string
+            zip_code string
+            rating int [enums:[1 2 3 4 5]]
+        }
+        table rooms{
+            home homes ManyToOne
+            room_type string
+            description string
+            price int
+            availability boolean
+        }
+        table bookings{
+            home homes ManyToOne OnDelete:SET NULL
+            renter users ManyToOne OnDelete:SET NULL
+            start_date date
+            end_date date
+            status string [enums:[\"waiting for payment\" \"paid\"]]
+        }
+        role home_owner{
+            select insert update delete [homes[\"owner.external_id == user.id\"] rooms[\"owner.external_id == user.id\"]]
+            select update delete [users[\"external_id == user.id\"]]
+            select [bookings[\"home.owner.external_id == user.id\"]]
+        }
+        role renter{
+            select insert update [bookings[\"renter.external_id == user.id\"]]
+            select update delete [users[\"external_id == user.id\"]]
+        }
+    
+    "
+}
+{
+    "prompt":"Create a model for an online travel application that provides a wide range of travel needs on one platform. Offers include flights and hotels.",
+    "completion":"
+table users{
+  first_name string
+  last_name string
+  birth_date date
+  gender string
+  address string
+  city string
+  state string
+  zip_code string
+  profile_picture file [ extensions:\".png, .jpg, .svg\"]
+}
+table flights{
+  flight_number string [unique:true]
+  origin string
+  destination string
+  departure_date_time datetime
+  arrival_date_time datetime
+}
+table seats {
+  flight flights ManyToOne
+  seat_number string
+  price int
+  status string [enums:[\"booked\" \"available\"]]
+  seat_class string [enums:[\"economy\" \"premium_economy\" \"business\" \"first_class\"]]
+}
+table hotels{
+  name string [unique:true]
+  address string
+  city string
+  state string
+  zip_code string
+  price int
+  rooms int
+}
+table hotel_bookings{
+  user users ManyToOne OnDelete:SET NULL
+  hotel hotels ManyToOne OnDelete:SET NULL
+  start_date date
+  end_date date
+  status string [enums:[\"waiting for payment\" \"paid\"]]
+}
+table flight_bookings{
+  user users ManyToOne OnDelete:SET NULL
+  seat seats ManyToOne OnDelete:SET NULL
+  status string [enums:[\"waiting for payment\" \"paid\"]]
+}
+role user{
+  select insert update delete [users[\"external_id == user.id\"]]
+  select [flights seats hotels]
+  select insert update [hotel_bookings[\"user.external_id == user.id\"] flight_bookings[\"user.external_id == user.id\"]]
+}
+"
+}
+{
+    "prompt":"",
+    "completion":"
+    
+    "
+}
+{
+    "prompt":"",
+    "completion":"
+    
+    "
+}
+{
+    "prompt":"",
+    "completion":"
+    
+    "
+}
+{
+    "prompt":"",
+    "completion":"
+    
+    "
+}

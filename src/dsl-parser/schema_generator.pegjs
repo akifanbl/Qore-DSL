@@ -1,8 +1,20 @@
 {
+  function isPreDefinedUserColumn(column){
+   return (column == "external_id" || column == "email" || column == "phone" || column == "email_verified_at" || column == "phone_verified_at" || column == "password" || column == "active" || column == 
+"role")
+  }
   function generateModel(table, columns) {
     let separator = columns.length > 0? ',' : ''
     let result = JSON.parse(`[${table} ${separator} ${columns}]`)
     let tableName = result[0].migration.name
+    if (tableName == "users" || tableName == "user") {
+    	tableName = "users"
+        result.shift();
+        result = result.filter((op) => {
+        	return !isPreDefinedUserColumn(op.migration.name)
+        })
+    }
+    
     result.forEach((op) => {
       if (op.resource == 'Column'){
          op.migration.table = tableName
@@ -13,6 +25,7 @@
         } else if (op.resource.startsWith("ManyToMany")){
        	  op.migration.origin = {"table":tableName}
         }
+        op.migration.name = `${tableName}_${op.migration.name}`
         op.migration.nullable = op.migration.nullable || true;
       }
     })
@@ -40,6 +53,9 @@
     let separator = permissions.length > 0? ',' : ''
     let result = JSON.parse(`[${role} ${separator} ${permissions}]`)
     let roleName = result[0].migration.name
+    if (roleName == "user" || roleName == "admin"){
+    	result.shift();
+    }
     result.forEach((op) => {
       if (op.resource == 'Permission'){
          op.migration.role = roleName
@@ -72,7 +88,7 @@
   }
   
   function generateRelationMigration(name, targetTable, relType, relDefs){
-   let migration = {"name":name, "onUpdate" : "CASCADE", "onDelete" : "CASCADE"}
+   let migration = {"name":`${name}`, "onUpdate" : "CASCADE", "onDelete" : "CASCADE"}
    switch (relType){
      case ("OneToManyRelation"):
        migration["many"] = {"table":targetTable}
@@ -100,10 +116,8 @@
   }
 
   function generateIndex(index,indexRequiredAttributes,indexOptionalAttributes) {
-  	let separator = columns.length > 0? ',' : ''
     let result = JSON.parse(`[${index}]`)
     
-  
     indexRequiredAttributes.forEach(el => {
     	for(var k in el) result[0].migration[k]=el[k];
     })
@@ -123,7 +137,7 @@ start
 Entities = entities:(Model/View/RolePermission/Index)* {return mergeOperations(entities)}
 /* Model */
 Model
-	= _ "model" _ table:Table _ "{"_ columns:Columns _"}" _
+	= _ "table" _ table:Table _ "{"_ columns:Columns _"}" _
     {return generateModel(table,columns)}
 
 Table = tableName:TableName {return `{"operation": "Create", "resource": "Table", "migration": {"name": "${tableName}"}}`}
@@ -139,8 +153,8 @@ ColumnDefinitionsInput = "[" colDefs:ColumnDefinitions "]" {return colDefs} / ""
 RelationDefinition = RelationConstraintOnUpdate / RelationConstraintOnDelete / Nullable
 RelationDefinitions = RelationDefinition*
 RelationType = rel:("OneToMany" / "ManyToOne" / "ManyToMany" / "OneToOne") {return `${rel}Relation`}
-RelationConstraintOnUpdate = _("OnUpdate" / "onUpdate" / "onupdate" / "ONUPDATE") _ ":" _ val:RelationConstraintType _ {return {"onUpdate": val}}
-RelationConstraintOnDelete = _"OnDelete" _ ":" _ val:RelationConstraintType _ {return {"onDelete": val}}
+RelationConstraintOnUpdate = _"OnUpdate" _ ":" _ val:RelationConstraintType _ {return {"onUpdate": val}}
+RelationConstraintOnDelete = _"OnDelete"  _ ":" _ val:RelationConstraintType _ {return {"onDelete": val}}
 RelationConstraintType = "CASCADE" / "RESTRICT" / "SET NULL"
  
 /*View*/
@@ -180,10 +194,10 @@ PermissionType = "insert"/"select"/"update"/"delete"/"insight"
 
 /*DSL Column Type*/
 BigIntegerType = "bigint" {return {"type":"bigint", "definition": { "default": 0, "nullable": true }}}
-BooleanType = "bool" {return {"type":"boolean", "definition": { "default": null, "nullable": true }}}
+BooleanType = "boolean" {return {"type":"boolean", "definition": { "default": null, "nullable": true }}}
 DateTimeType = "datetime" {return {"type":"datetime", "definition" : { "default": "now()", "exact": false, "nullable": true, "triggers": [] }}}
 DateType = "date" {return {"type":"date", "definition" : { "default": "now()", "exact": false, "nullable": true }}}
-FileType = "file" {return {"type":"file","definition" : {"extensions": ".jpg, .png, .svg","default": { "filename": "", "size": 0, "mime": "application/octet-stream" }}}}
+FileType = "file" _ extensions:("[" _ "extensions" _ ":" _ val : (String) _ "]" {return val})*  _ {return {"type":"file","definition" : {"extensions": extensions.length > 0? extensions[0] : ".png, .jpg, .svg","default": { "filename": "", "size": 0, "mime": "application/octet-stream" }}}}
 FloatType = "float" {return {"type":"float","definition": {"precision": 8, "scale": 2, "default": 0, "nullable": true}}}
 IntegerType = "int" {return {"type":"integer", "definition": {"default":0, "nullable":true}}}
 JSONType = "json" {return {"type":"json", "definition": {"default":null, "nullable":true}}}
@@ -195,7 +209,7 @@ PolygonType = "polygon" {return {"type":"polygon", "definition": {"default": nul
 RawType = "raw" {return {"type":"polygon", "definition": {"default": null, "nullable":true, "raw": "(price * 2)"}}}
 RichTextType = "richtext" {return {"type":"richtext", "definition": {"default": null, "nullable":true}}}
 SelectType = "select" {return {"type":"select", "definition": {"default": null, "enums":[], "nullable": true}}}
-StringType = "str" {return {"type":"text", "definition": {"textType": "text"}}}
+StringType = "string" {return {"type":"text", "definition": {"textType": "text"}}}
 TimestampType = "timestamp" {return {"type":"timestamp", "definition": {"default": "now()", "nullable": true}}}
 
 /*Column Definition*/

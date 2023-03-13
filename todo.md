@@ -2,8 +2,9 @@
 
 PRIO
 
-1. Check /migrate endpoint and run "Create todo and person table (m:1)" to learn lookup behavior
-2. Implement lookup column type
+1. Create docs
+2. Check /migrate endpoint and run "Create todo and person table (m:1)" to learn lookup behavior
+3. Implement lookup column type
 
 [] Qore-Base integration
 [x] Delete id (auto created when creating a table)

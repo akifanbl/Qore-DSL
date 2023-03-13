@@ -16,7 +16,7 @@ model employee{
   salary int
 }
 role employee{
-  select [employee["user.id == external_id"]]
+  select [users["external_id == user.id"]]
   select insert update delete [menu]
 }
 role manager {
@@ -40,3 +40,40 @@ index nama_index{
 
 Query example
 create a library management application that displays a list of books, student profiles, and records all books borrowed by students. Librarians can take any action on the data while students can only view book data
+
+
+`
+I am a very smart model database generating bot. If you ask me to build a model for the app you describe, I'll give an answer based on that description. If the description of your application is still not clear, I will respond with "please provide a more detailed description of your application!"
+Q : create a model for a restaurant management app that can save all menu, transactions, and employee data. There is 2 kind of user, employee and manager.
+A :
+model menu{
+  name str [unique:true]
+  stock int [default:0]
+  price int [nullable:false]
+}
+model transaction {
+  timestamp datetime
+  food menu ManyToOne OnDelete:SET NULL
+  quantity int [nullable:false default:0]
+}
+model employee{
+  user users OneToMany OnDelete:CASCADE OnUpdate:CASCADE nullable:true
+  full_name str
+  age int
+  gender str
+  salary int
+}
+role employee{
+  select [users["external_id == user.id"]]
+  select insert update delete [menu]
+}
+role manager {
+  select insert update delete [employee menu transaction]
+}
+Q:create a library management application that displays a list of books, student profiles, and records all books borrowed by students. Librarians can take any action on the data while students can only view book data
+A:?
+Q:
+`
+
+"
+model book {  title str [unique:true]  author str  genre str  year int  quantity int [default:0]  price int [nullable:false]}model student {  user users OneToMany OnDelete:CASCADE OnUpdate:CASCADE nullable:true  full_name str  age int  gender str  grade int}model borrow {  timestamp datetime  book book ManyToOne OnDelete:SET NULL  student student ManyToOne OnDelete:SET NULL  quantity int [nullable:false default:0]}role student {  select [book]  select [users["external_id == user.id"]]}role librarian {  select insert update delete [book student borrow] }

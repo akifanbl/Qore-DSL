@@ -8,9 +8,9 @@
 // };
 
 // export default {
-//   OPENAI_API_KEY: getEnv("OPENAI_API_KEY", "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"),
+//   OPENAI_API_KEY: getEnv("OPENAI_API_KEY", "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"),
 // };
 
 export default {
-  OPENAI_API_KEY: "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",
+  OPENAI_API_KEY: "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",
 };
